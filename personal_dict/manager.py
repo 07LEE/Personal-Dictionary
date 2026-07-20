@@ -1,7 +1,9 @@
-import os
 import json
 import logging
+from pathlib import Path
 from kiwipiepy import Kiwi
+
+logger = logging.getLogger(__name__)
 
 class DictionaryManager:
     """
@@ -10,13 +12,14 @@ class DictionaryManager:
     def __init__(self, kiwi_instance=None):
         self.kiwi = kiwi_instance or Kiwi()
         # Default path to the single custom dictionary (now in the same folder)
-        self.dict_path = os.path.join(os.path.dirname(__file__), "custom_dict.txt")
-        self.synonyms_path = os.path.join(os.path.dirname(__file__), "synonyms.json")
+        base_dir = Path(__file__).resolve().parent
+        self.dict_path = base_dir / "custom_dict.txt"
+        self.synonyms_path = base_dir / "synonyms.json"
         self.synonyms = {}
 
     def load_dict(self):
         """Loads words from custom_dict.txt into the Kiwi dictionary."""
-        if not os.path.exists(self.dict_path):
+        if not self.dict_path.exists():
             return False
             
         count = 0
@@ -35,25 +38,25 @@ class DictionaryManager:
                     self.kiwi.add_user_word(word, tag, score)
                     count += 1
                 except Exception as e:
-                    logging.error(f"Failed to add word '{word}': {e}")
+                    logger.error("Failed to add word '%s': %s", word, e)
         
-        print(f"LOGE: [DictionaryManager] Loaded {count} words from custom_dict.txt")
+        logger.info("Loaded %d words from custom_dict.txt", count)
         self.load_synonyms()
         return True
 
     def load_synonyms(self):
         """Loads synonyms from synonyms.json into memory."""
-        if not os.path.exists(self.synonyms_path):
+        if not self.synonyms_path.exists():
             self.synonyms = {}
             return False
             
         try:
             with open(self.synonyms_path, 'r', encoding='utf-8') as f:
                 self.synonyms = json.load(f)
-            print(f"LOGE: [DictionaryManager] Loaded {len(self.synonyms)} synonyms from synonyms.json")
+            logger.info("Loaded %d synonyms from synonyms.json", len(self.synonyms))
             return True
         except Exception as e:
-            logging.error(f"Failed to load synonyms: {e}")
+            logger.error("Failed to load synonyms: %s", e)
             self.synonyms = {}
             return False
 
